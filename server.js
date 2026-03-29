@@ -55,7 +55,7 @@ async function generateFollowUp(userId, userMessage) {
 - 번호나 기호 없이 자연스럽게`,
     messages
   }, {
-    headers: { 'x-api-key': process.env.CLAUDE_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }
+    headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }
   });
   return response.data.content[0].text;
 }
@@ -90,6 +90,9 @@ app.post('/webhook', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`인생책 챗봇 서버 실행 중 (포트 ${PORT})`);
-  console.log(`CLAUDE_API_KEY 설정됨: ${!!process.env.CLAUDE_API_KEY}`);
-  console.log(`CLAUDE_API_KEY 앞 10자: ${process.env.CLAUDE_API_KEY ? process.env.CLAUDE_API_KEY.substring(0, 10) : 'EMPTY'}`);
+  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+  console.log(`ANTHROPIC_API_KEY: ${process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 10) : 'EMPTY'}`);
+  console.log(`CLAUDE_API_KEY: ${process.env.CLAUDE_API_KEY ? process.env.CLAUDE_API_KEY.substring(0, 10) : 'EMPTY'}`);
+  console.log(`사용할 키: ${apiKey ? apiKey.substring(0, 10) : 'NONE - API 호출 불가'}`);
+
 });
