@@ -197,15 +197,13 @@ app.post('/webhook', async (req, res) => {
 
     if (!utterance) return res.json(kakaoResponse('말씀을 듣지 못했어요. 다시 한번 말씀해 주실 수 있을까요?'));
 
-    // 시작하기
-    if (utterance === '시작하기') {
-      let state = await getUserState(userId);
-      if (!state) {
-        state = { day: 1, question_index: 0, followup_count: 0, completed: false };
-        await upsertUserState(userId, state);
-      }
-      const dayInfo = DAY_PLAN[state.day];
-      const topic = dayInfo.topics[state.question_index];
+    // 유저 상태 확인 (없으면 자동 시작)
+    let state = await getUserState(userId);
+    if (!state) {
+      state = { day: 1, question_index: 0, followup_count: 0, completed: false };
+      await upsertUserState(userId, state);
+      const dayInfo = DAY_PLAN[1];
+      const topic = dayInfo.topics[0];
       const firstQuestion = await callClaude(
         `당신은 어르신의 인생 이야기를 따뜻하게 기록하는 인터뷰어입니다.
 오늘은 [${dayInfo.theme}]에 대해 이야기 나눌 거예요.
@@ -213,13 +211,9 @@ app.post('/webhook', async (req, res) => {
 따뜻하고 편안한 인사와 함께, 열린 질문으로 시작해주세요. 존댓말 사용.`,
         [{ role: 'user', content: '첫 질문을 시작해주세요.' }]
       );
-      await saveMessage(userId, state.day, topic, 'assistant', firstQuestion);
+      await saveMessage(userId, 1, topic, 'assistant', firstQuestion);
       return res.json(kakaoResponse(firstQuestion));
     }
-
-    // 유저 상태 확인
-    let state = await getUserState(userId);
-    if (!state) return res.json(kakaoResponse('시작하기 버튼을 눌러주세요 😊'));
 
     if (state.completed) {
       const book = await generateBook(userId);
