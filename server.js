@@ -8,6 +8,15 @@ app.use(express.json());
 
 const conversations = new Map();
 
+const WELCOME_MESSAGE = `안녕하세요 😊
+
+어르신의 소중한 삶을 책으로 남겨드리는
+인생책 챗봇입니다.
+
+살아오신 이야기들, 기억 속 풍경들,
+그리고 마음 깊이 간직해온 순간들을
+저와 함께 천천히 풀어보시겠어요?`;
+
 function getHistory(userId) {
   if (!conversations.has(userId)) conversations.set(userId, []);
   return conversations.get(userId).slice(-10);
@@ -18,6 +27,10 @@ function saveMessage(userId, role, content) {
   const history = conversations.get(userId);
   history.push({ role, content });
   if (history.length > 30) conversations.set(userId, history.slice(-30));
+}
+
+function isNewUser(userId) {
+  return !conversations.has(userId) || conversations.get(userId).length === 0;
 }
 
 async function speechToText(audioUrl) {
@@ -68,24 +81,23 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', message: '인생책 챗봇 서버 실행 중' });
 });
 
-app.get('/env-check', (req, res) => {
-  res.json({
-    RAILWAY_ENVIRONMENT_NAME: process.env.RAILWAY_ENVIRONMENT_NAME,
-    RAILWAY_SERVICE_NAME: process.env.RAILWAY_SERVICE_NAME,
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? '설정됨' : 'EMPTY',
-    CLAUDE_API_KEY: process.env.CLAUDE_API_KEY ? '설정됨' : 'EMPTY',
-    allKeys: Object.keys(process.env).sort(),
-  });
-});
-
 app.post('/webhook', async (req, res) => {
   try {
     const userId = req.body.userRequest?.user?.id || 'unknown';
     const utterance = req.body.userRequest?.utterance || '';
     const audioUrl = req.body.userRequest?.params?.media?.url;
     let userMessage = utterance;
+
     if (audioUrl) userMessage = await speechToText(audioUrl);
     if (!userMessage.trim()) return res.json(kakaoResponse('말씀을 듣지 못했어요. 다시 한번 말씀해 주실 수 있을까요?'));
+
+    // 첫 대화인 경우 웰컴 메시지 + 첫 질문 함께 응답
+    if (isNewUser(userId)) {
+      const followUp = await generateFollowUp(userId, userMessage);
+      saveMessage(userId, 'user', userMessage);
+      saveMessage(userId, 'assistant', followUp);
+      return res.json(kakaoResponse(`${WELCOME_MESSAGE}\n\n${followUp}`));
+    }
 
     const followUp = await generateFollowUp(userId, userMessage);
     saveMessage(userId, 'user', userMessage);
@@ -100,9 +112,4 @@ app.post('/webhook', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`인생책 챗봇 서버 실행 중 (포트 ${PORT})`);
-  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
-  console.log(`ANTHROPIC_API_KEY: ${process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 10) : 'EMPTY'}`);
-  console.log(`CLAUDE_API_KEY: ${process.env.CLAUDE_API_KEY ? process.env.CLAUDE_API_KEY.substring(0, 10) : 'EMPTY'}`);
-  console.log(`사용할 키: ${apiKey ? apiKey.substring(0, 10) : 'NONE - API 호출 불가'}`);
-
 });
