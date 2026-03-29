@@ -68,6 +68,14 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', message: '인생책 챗봇 서버 실행 중' });
 });
 
+app.get('/env-check', (req, res) => {
+  res.json({
+    allKeys: Object.keys(process.env).sort(),
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? '설정됨' : 'EMPTY',
+    CLAUDE_API_KEY: process.env.CLAUDE_API_KEY ? '설정됨' : 'EMPTY',
+  });
+});
+
 app.post('/webhook', async (req, res) => {
   try {
     const userId = req.body.userRequest?.user?.id || 'unknown';
