@@ -91,12 +91,11 @@ app.post('/webhook', async (req, res) => {
     if (audioUrl) userMessage = await speechToText(audioUrl);
     if (!userMessage.trim()) return res.json(kakaoResponse('말씀을 듣지 못했어요. 다시 한번 말씀해 주실 수 있을까요?'));
 
-    // 첫 대화인 경우 웰컴 메시지 + 첫 질문 함께 응답
-    if (isNewUser(userId)) {
-      const followUp = await generateFollowUp(userId, userMessage);
-      saveMessage(userId, 'user', userMessage);
-      saveMessage(userId, 'assistant', followUp);
-      return res.json(kakaoResponse(`${WELCOME_MESSAGE}\n\n${followUp}`));
+    // 시작하기 버튼 클릭 시 첫 질문 시작
+    if (userMessage.trim() === '시작하기') {
+      const firstQuestion = `어르신, 반갑습니다 😊\n\n첫 번째 이야기부터 여쭤볼게요.\n\n태어나신 곳은 어디세요? 어린 시절 어떤 동네에서 자라셨는지 편하게 말씀해 주세요.`;
+      saveMessage(userId, 'assistant', firstQuestion);
+      return res.json(kakaoResponse(firstQuestion));
     }
 
     const followUp = await generateFollowUp(userId, userMessage);
