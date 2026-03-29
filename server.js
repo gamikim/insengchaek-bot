@@ -88,4 +88,8 @@ app.post('/webhook', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`인생책 챗봇 서버 실행 중 (포트 ${PORT})`));
+app.listen(PORT, () => {
+  console.log(`인생책 챗봇 서버 실행 중 (포트 ${PORT})`);
+  console.log(`CLAUDE_API_KEY 설정됨: ${!!process.env.CLAUDE_API_KEY}`);
+  console.log(`CLAUDE_API_KEY 앞 10자: ${process.env.CLAUDE_API_KEY ? process.env.CLAUDE_API_KEY.substring(0, 10) : 'EMPTY'}`);
+});
