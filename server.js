@@ -32,7 +32,7 @@ function getHistory(userId) {
   return rows;
 }
 
-// 음성 → 텍스트 변환
+// 음성 → 텍스트 변환 (OpenAI Whisper)
 async function speechToText(audioUrl) {
   const response = await axios.get(audioUrl, { responseType: 'arraybuffer' });
   const formData = new FormData();
@@ -52,22 +52,11 @@ async function speechToText(audioUrl) {
   return result.data.text;
 }
 
-// GPT로 후속 질문 생성
+// Claude로 후속 질문 생성
 async function generateFollowUp(userId, userMessage) {
   const history = getHistory(userId);
 
   const messages = [
-    {
-      role: 'system',
-      content: `당신은 어르신의 인생 이야기를 기록하는 따뜻한 인터뷰어입니다.
-어르신이 편안하게 이야기를 이어갈 수 있도록 짧고 친근한 후속 질문 2개를 만들어주세요.
-
-규칙:
-- 존댓말 사용
-- 질문은 짧고 쉽게
-- 감정과 기억을 자연스럽게 끌어내는 질문
-- 번호를 붙여서 2개만 출력`
-    },
     ...history.map(m => ({
       role: m.role === 'user' ? 'user' : 'assistant',
       content: m.content
@@ -78,18 +67,27 @@ async function generateFollowUp(userId, userMessage) {
     }
   ];
 
-  const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-    model: 'gpt-4o-mini',
+  const response = await axios.post('https://api.anthropic.com/v1/messages', {
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 300,
+    system: `당신은 어르신의 인생 이야기를 기록하는 따뜻한 인터뷰어입니다.
+어르신이 편안하게 이야기를 이어갈 수 있도록 짧고 친근한 후속 질문 2개를 만들어주세요.
+
+규칙:
+- 존댓말 사용
+- 질문은 짧고 쉽게
+- 감정과 기억을 자연스럽게 끌어내는 질문
+- 번호를 붙여서 2개만 출력`,
     messages
   }, {
     headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'x-api-key': process.env.CLAUDE_API_KEY,
+      'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json'
     }
   });
 
-  return response.data.choices[0].message.content;
+  return response.data.content[0].text;
 }
 
 // 카카오 응답 형식
