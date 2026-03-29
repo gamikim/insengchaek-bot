@@ -70,9 +70,11 @@ app.get('/', (req, res) => {
 
 app.get('/env-check', (req, res) => {
   res.json({
-    allKeys: Object.keys(process.env).sort(),
+    RAILWAY_ENVIRONMENT_NAME: process.env.RAILWAY_ENVIRONMENT_NAME,
+    RAILWAY_SERVICE_NAME: process.env.RAILWAY_SERVICE_NAME,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? '설정됨' : 'EMPTY',
     CLAUDE_API_KEY: process.env.CLAUDE_API_KEY ? '설정됨' : 'EMPTY',
+    allKeys: Object.keys(process.env).sort(),
   });
 });
 
